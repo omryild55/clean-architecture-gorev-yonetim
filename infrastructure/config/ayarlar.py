@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from threading import RLock
 from typing import Optional
 
 from application.use_cases.gorev_durum_degistir import GorevDurumDegistirUseCase
@@ -67,17 +68,28 @@ class BagimlilikKonteyneri:
         ayarlar: Optional[Ayarlar] = None,
         repository: Optional[GorevRepositoryArayuzu] = None,
     ) -> None:
+        self._kilit: RLock = RLock()
         self._ayarlar: Ayarlar = ayarlar if ayarlar is not None else Ayarlar.ortamdan_yukle()
+        self._sqlite_repo: Optional[SqliteGorevRepository] = None
+        self._memory_repo: Optional[InMemoryGorevRepository] = None
+
         if repository is not None:
             self._repository: GorevRepositoryArayuzu = repository
-            self._repo_tipi: str = (
-                "memory"
-                if isinstance(repository, InMemoryGorevRepository)
-                else self._ayarlar.repo_tipi
-            )
+            if isinstance(repository, InMemoryGorevRepository):
+                self._repo_tipi: str = "memory"
+                self._memory_repo = repository
+            elif isinstance(repository, SqliteGorevRepository):
+                self._repo_tipi = "sqlite"
+                self._sqlite_repo = repository
+            else:
+                self._repo_tipi = self._ayarlar.repo_tipi
         else:
             self._repository = self._repository_olustur(self._ayarlar)
             self._repo_tipi = self._ayarlar.repo_tipi
+            if isinstance(self._repository, InMemoryGorevRepository):
+                self._memory_repo = self._repository
+            elif isinstance(self._repository, SqliteGorevRepository):
+                self._sqlite_repo = self._repository
 
     @staticmethod
     def _repository_olustur(ayarlar: Ayarlar) -> GorevRepositoryArayuzu:
@@ -94,42 +106,82 @@ class BagimlilikKonteyneri:
     @property
     def repository(self) -> GorevRepositoryArayuzu:
         """Enjekte edilen soyut görev deposu örneğini döndürür."""
-        return self._repository
+        with self._kilit:
+            return self._repository
 
     @property
     def aktif_repo_tipi(self) -> str:
         """Çalışma zamanında aktif olan depo tipini ('sqlite' veya 'memory') döndürür."""
-        return self._repo_tipi
+        with self._kilit:
+            return self._repo_tipi
+
+    @property
+    def aktif_depo_sinifi(self) -> str:
+        """Aktif somut repository sınıfının adını döndürür."""
+        with self._kilit:
+            return type(self._repository).__name__
+
+    def depo_degistir(self, yeni_repo_tipi: str) -> str:
+        """Çalışma zamanında Dependency Inversion prensibiyle aktif veri deposunu değiştirir."""
+        if not isinstance(yeni_repo_tipi, str):
+            raise ValueError("Repository tipi metin olmalıdır ('sqlite' veya 'memory').")
+
+        hedef = yeni_repo_tipi.strip().lower()
+        if hedef not in DESTEKLENEN_REPO_TIPLERI:
+            raise ValueError(
+                f"Geçersiz REPO_TYPE değeri: '{yeni_repo_tipi}'. "
+                f"Desteklenen değerler: {', '.join(sorted(DESTEKLENEN_REPO_TIPLERI))}."
+            )
+
+        with self._kilit:
+            if hedef == "memory":
+                if self._memory_repo is None:
+                    self._memory_repo = InMemoryGorevRepository()
+                self._repository = self._memory_repo
+                self._repo_tipi = "memory"
+            else:
+                if self._sqlite_repo is None:
+                    self._sqlite_repo = SqliteGorevRepository(
+                        veritabani_url=self._ayarlar.sqlite_url
+                    )
+                self._repository = self._sqlite_repo
+                self._repo_tipi = "sqlite"
+            return self._repo_tipi
 
     def gorev_olustur_use_case(self) -> GorevOlusturUseCase:
         """GorevOlusturUseCase örneği üretir."""
-        return GorevOlusturUseCase(self._repository)
+        return GorevOlusturUseCase(self.repository)
 
     def gorev_listele_use_case(self) -> GorevListeleUseCase:
         """GorevListeleUseCase örneği üretir."""
-        return GorevListeleUseCase(self._repository)
+        return GorevListeleUseCase(self.repository)
 
     def gorev_getir_use_case(self) -> GorevGetirUseCase:
         """GorevGetirUseCase örneği üretir."""
-        return GorevGetirUseCase(self._repository)
+        return GorevGetirUseCase(self.repository)
 
     def gorev_guncelle_use_case(self) -> GorevGuncelleUseCase:
         """GorevGuncelleUseCase örneği üretir."""
-        return GorevGuncelleUseCase(self._repository)
+        return GorevGuncelleUseCase(self.repository)
 
     def gorev_durum_degistir_use_case(self) -> GorevDurumDegistirUseCase:
         """GorevDurumDegistirUseCase örneği üretir."""
-        return GorevDurumDegistirUseCase(self._repository)
+        return GorevDurumDegistirUseCase(self.repository)
 
     def gorev_sil_use_case(self) -> GorevSilUseCase:
         """GorevSilUseCase örneği üretir."""
-        return GorevSilUseCase(self._repository)
+        return GorevSilUseCase(self.repository)
 
     def kapat(self) -> None:
         """Varsa kalıcı depo kaynaklarını güvenli şekilde serbest bırakır."""
-        kapat_metodu = getattr(self._repository, "kapat", None)
-        if callable(kapat_metodu):
-            kapat_metodu()
+        with self._kilit:
+            kapatilanlar: set[int] = set()
+            for depo in (self._repository, self._sqlite_repo, self._memory_repo):
+                if depo is not None and id(depo) not in kapatilanlar:
+                    kapat_metodu = getattr(depo, "kapat", None)
+                    if callable(kapat_metodu):
+                        kapat_metodu()
+                    kapatilanlar.add(id(depo))
 
 
 _varsayilan_konteyner: Optional[BagimlilikKonteyneri] = None

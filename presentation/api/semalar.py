@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -107,9 +107,169 @@ class HataYaniti(BaseModel):
 
 
 class SistemBilgisiYaniti(BaseModel):
-    """Çalışan uygulamanın aktif altyapı ve repository durum bilgisi."""
+    """Çalışan uygulamanın aktif altyapı, repository ve telemetri durum bilgisi."""
 
     uygulama: str
     surum: str
     aktif_repository: str
     durum: str
+    depo_sinifi: str = ""
+    veritabani_yolu: str = ""
+    calisma_suresi_sn: float = 0.0
+    toplam_istek: int = 0
+    basarili_istek: int = 0
+    domain_ihlal_sayisi: int = 0
+    baslangic_zamani: str = ""
+
+
+class DepoDegistirIstegi(BaseModel):
+    """Çalışma zamanında aktif repository adaptörünü değiştirme isteği."""
+
+    repo_tipi: str = Field(
+        ...,
+        description="Hedef repository adaptörü ('sqlite' veya 'memory').",
+        examples=["memory"],
+    )
+
+
+class DepoDegistirYaniti(BaseModel):
+    """Repository değiştirme işlemi sonucunda döndürülen onay ve durum bilgisi."""
+
+    onceki_repository: str
+    aktif_repository: str
+    depo_sinifi: str
+    gorev_sayisi: int
+    mesaj: str
+
+
+class KatmanAdimiYaniti(BaseModel):
+    """İsteğin geçtiği Clean Architecture katmanı ve yürütme durumu."""
+
+    katman: str
+    bilesen: str
+    durum: str
+
+
+class IslemLoguYaniti(BaseModel):
+    """Sunucu tarafından kaydedilen gerçek zamanlı API ve Domain işlem izi."""
+
+    iz_id: str
+    zaman: str
+    metot: str
+    yol: str
+    durum_kodu: int
+    sure_ms: float
+    seviye: str
+    aktif_repository: str
+    depo_sinifi: str
+    use_case: str
+    katman_zinciri: list[KatmanAdimiYaniti]
+    hata_kodu: Optional[str] = None
+    hata_sinifi: Optional[str] = None
+    kaynak_dosya: Optional[str] = None
+    mesaj: str = ""
+    istek_govdesi: Any = None
+    yanit_ozeti: Any = None
+
+
+class LogListesiYaniti(BaseModel):
+    """Sistem işlem logları ve özet telemetri istatistikleri."""
+
+    toplam_kayit: int
+    ozet: dict[str, Any]
+    kayitlar: list[IslemLoguYaniti]
+
+
+class LogTemizleYaniti(BaseModel):
+    """İşlem log tamponu temizleme sonucu."""
+
+    silinen: int
+    mesaj: str
+
+
+class OrnekVeriYaniti(BaseModel):
+    """Gerçek Use Case hattından geçirilen demo görev yükleme sonucu."""
+
+    eklenen_sayisi: int
+    aktif_repository: str
+    mesaj: str
+    gorevler: list[GorevYaniti]
+
+
+class DosyaAstBilgisi(BaseModel):
+    """Tek bir Python kaynak dosyasının canlı AST bağımlılık inceleme sonucu."""
+
+    dosya: str
+    katman: str
+    satir_sayisi: int
+    siniflar: list[str]
+    fonksiyonlar: list[str]
+    ic_importlar: list[str]
+    stdlib_importlar: list[str]
+    dis_importlar: list[str]
+    ihlaller: list[str]
+    temiz: bool
+
+
+class KatmanAstOzeti(BaseModel):
+    """Clean Architecture katmanı bazında AST uyumluluk özeti."""
+
+    katman: str
+    dosya_sayisi: int
+    satir_sayisi: int
+    ihlal_sayisi: int
+    kural: str
+    durum: str
+
+
+class BagimlilikKenari(BaseModel):
+    """Katmanlar arası tespit edilen gerçek import yönü ve sayısı."""
+
+    kaynak: str
+    hedef: str
+    sayac: int
+
+
+class MimariDenetimYaniti(BaseModel):
+    """Tüm proje kaynak kodu için gerçek zamanlı AST bağımlılık denetim raporu."""
+
+    temiz: bool
+    toplam_dosya: int
+    toplam_satir: int
+    toplam_ihlal: int
+    sure_ms: float
+    katmanlar: list[KatmanAstOzeti]
+    kenarlar: list[BagimlilikKenari]
+    dosyalar: list[DosyaAstBilgisi]
+
+
+class KaynakKodYaniti(BaseModel):
+    """Seçilen Python kaynak dosyasının salt okunur içeriği."""
+
+    dosya: str
+    katman: str
+    satir_sayisi: int
+    icerik: str
+
+
+class DurumGecisHucresiYaniti(BaseModel):
+    """4x4 görev durum makinesi geçiş matrisindeki tek bir hücrenin tanımı."""
+
+    kaynak: str
+    hedef: str
+    izinli: bool
+    kural_aciklamasi: str
+
+
+class MimariOzetYaniti(BaseModel):
+    """Mimari kokpit sekmeleri için salt-okunur kapsam, durum matrisi, SOLID ve depo özeti."""
+
+    aktif_repository: str
+    depo_sinifi: str
+    veritabani_yolu: str
+    test_ozeti: dict[str, int]
+    durum_matrisi: list[DurumGecisHucresiYaniti]
+    is_kurallari: list[dict[str, Any]]
+    solid_prensipleri: list[dict[str, Any]]
+    katman_haritasi: list[dict[str, Any]]
+    depo_karsilastirma: list[dict[str, Any]]

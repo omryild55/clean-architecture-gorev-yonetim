@@ -3,892 +3,595 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clean Architecture Görev Yönetim Sistemi</title>
+  <title>Clean Architecture Görev Yönetim Sistemi — Domain Gözlem Kokpiti</title>
+  <script>
+    window.tailwind = { config: { corePlugins: { preflight: false } } };
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <style>
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-    .kanban-kolon {
-      min-height: 440px;
-    }
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px) scale(0.98);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-    .toast-anim {
-      animation: slideIn 0.2s ease-out forwards;
-    }
-  </style>
+  <link rel="stylesheet" href="/static/styles.css?v=3" />
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+<body>
+  <div id="bildirim-yigini" class="bildirim-yigini"></div>
 
-  <!-- Bildirim (Toast) Alanı -->
-  <div id="toast-alani" class="fixed top-4 right-4 z-50 flex flex-col gap-3 max-w-md w-full pointer-events-none px-4 sm:px-0"></div>
-
-  <!-- Üst Başlık Çubuğu -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3 min-w-0">
-        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm shrink-0">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-          </svg>
+  <div class="kokpit-kabuk">
+    <!-- Üst Kontrol Çubuğu -->
+    <header class="ust-bar">
+      <div class="ust-bar-ic">
+        <div class="marka-grup">
+          <div class="marka-logo">CA</div>
+          <div>
+            <h1 class="marka-baslik">Görev Yönetim Sistemi — Clean Architecture &amp; Domain Gözlem Kokpiti</h1>
+            <p class="marka-alt">Saf Domain Çekirdeği · SOLID Prensipleri · Canlı AST Denetimi · Çift Repository Adaptörü</p>
+          </div>
         </div>
-        <div class="truncate">
-          <h1 class="text-base sm:text-lg font-bold text-slate-900 truncate">Görev Yönetim Sistemi</h1>
-          <p class="text-xs text-slate-500 hidden sm:block">Saf Clean Architecture &amp; SOLID Enterprise Paneli</p>
-        </div>
-      </div>
 
-      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-        <span id="repo-rozeti" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="repo-metni">REPO: ...</span>
-        </span>
-
-        <button
-          id="kurallar-modal-btn"
-          type="button"
-          class="hidden md:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition"
-        >
-          <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          İş Kuralları
-        </button>
-
-        <a
-          href="/docs"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition"
-        >
-          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-          </svg>
-          Swagger /docs
-        </a>
-
-        <button
-          id="yeni-gorev-btn"
-          type="button"
-          class="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm transition cursor-pointer"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Yeni Görev
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Ana İçerik -->
-  <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 space-y-6">
-
-    <!-- Özet İstatistik Kartları -->
-    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Toplam Görev</span>
-          <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
+        <div class="telemetri-grup">
+          <span class="durum-hap cyan">
+            <span class="canli-nokta"></span>
+            REPO_TYPE: <strong id="ust-repo-etiket">SQLITE</strong>
+            <span id="ust-depo-sinifi" style="color:var(--text-dim)">(SqliteGorevRepository)</span>
           </span>
+
+          <div class="dip-hizli-secici" title="Çalışma zamanında Dependency Inversion (DIP) adaptör değişimi">
+            <button type="button" id="dip-sqlite-btn" class="dip-mini-btn aktif" data-depo="sqlite">SQLite</button>
+            <button type="button" id="dip-memory-btn" class="dip-mini-btn" data-depo="memory">In-Memory</button>
+          </div>
+
+          <span class="durum-hap emerald">Test Kapsamı: <strong id="ust-test-ozeti">66+ Test Yeşil</strong></span>
+          <span class="durum-hap emerald">AST: <strong id="ust-ast-durum">0 İhlal</strong></span>
+          <span class="durum-hap">İstek: <strong id="ust-istek-sayisi">0</strong></span>
+          <span class="durum-hap rose">Domain İhlal: <strong id="ust-ihlal-sayisi">0</strong></span>
+
+          <a href="/docs" target="_blank" rel="noopener noreferrer" class="btn btn-sm">Swagger /docs</a>
         </div>
-        <p id="stat-toplam" class="mt-2 text-2xl font-extrabold text-slate-900">0</p>
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-amber-600">Beklemede</span>
-          <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </span>
-        </div>
-        <p id="stat-beklemede" class="mt-2 text-2xl font-extrabold text-slate-900">0</p>
-      </div>
+      <!-- 4 Ana Sekme Navigasyonu -->
+      <nav class="sekme-seridi" aria-label="Kokpit Sekmeleri">
+        <div class="sekme-seridi-ic">
+          <div class="sekme-butonlari">
+            <button type="button" class="sekme-btn aktif" data-sekme="operasyon">
+              <span>1. Canlı Operasyon &amp; Katman Akışı</span>
+              <span id="sekme-rozet-gorev" class="sekme-rozet">0</span>
+            </button>
+            <button type="button" class="sekme-btn" data-sekme="kurallar">
+              <span>2. İş Kuralları &amp; 4×4 Durum Matrisi</span>
+              <span id="sekme-rozet-lab" class="sekme-rozet">5 Kural</span>
+            </button>
+            <button type="button" class="sekme-btn" data-sekme="mimari">
+              <span>3. Clean Architecture, SOLID &amp; AST</span>
+              <span id="sekme-rozet-ast" class="sekme-rozet">TEMİZ</span>
+            </button>
+            <button type="button" class="sekme-btn" data-sekme="loglar">
+              <span>4. HTTP/JSON İzler &amp; Depo Karşılaştırma</span>
+              <span id="sekme-rozet-log" class="sekme-rozet">0</span>
+            </button>
+          </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-blue-600">Devam Ediyor</span>
-          <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </span>
+          <span id="ust-calisma-suresi" class="uuid-tag">Uptime: 0s</span>
         </div>
-        <p id="stat-devam" class="mt-2 text-2xl font-extrabold text-slate-900">0</p>
-      </div>
+      </nav>
+    </header>
 
-      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Tamamlandı</span>
-          <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </span>
+    <!-- Tek Tık Hazır Demo Senaryoları Barı -->
+    <section class="demo-bar" aria-label="Hazır Sunum Demo Senaryoları">
+      <div class="demo-bar-ic">
+        <div class="demo-senaryo-grup">
+          <span class="demo-etiket">Hazır Demo Senaryoları:</span>
+          <button type="button" class="btn btn-emerald btn-sm" data-demo="olustur_201">1. Geçerli Görev Oluştur (201)</button>
+          <button type="button" class="btn btn-amber btn-sm" data-demo="sicrama_400">2. Beklemede -&gt; Tamamlandı Dene (400)</button>
+          <button type="button" class="btn btn-amber btn-sm" data-demo="kilit_400">3. Biten Görevi Düzenle -&gt; Kilit (400)</button>
+          <button type="button" class="btn btn-rose btn-sm" data-demo="kritik_sil_400">4. Kritik Aktif Görevi Sil -&gt; Engel (400)</button>
+          <button type="button" class="btn btn-rose btn-sm" data-demo="gecmis_tarih_422">5. Geçmiş Tarih Gönder (422)</button>
         </div>
-        <p id="stat-tamamlandi" class="mt-2 text-2xl font-extrabold text-slate-900">0</p>
+
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button type="button" id="ornek-veri-btn" class="btn btn-cyan btn-sm">5 Örnek Görev Yükle</button>
+          <button type="button" id="yeni-gorev-btn" class="btn btn-primary btn-sm">+ Yeni Görev</button>
+        </div>
       </div>
     </section>
 
-    <!-- Filtreleme ve Görünüm Araç Çubuğu -->
-    <section class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-      <div class="flex flex-col sm:flex-row flex-1 gap-3">
-        <div class="relative flex-1 min-w-[200px]">
-          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            id="arama-input"
-            type="text"
-            placeholder="Başlık veya açıklamada ara..."
-            class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          />
+    <!-- Ana Sekme Alanı -->
+    <main class="ana-icerik">
+
+      <!-- SEKME 1: CANLI OPERASYON & İNTERAKTİF KATMAN AKIŞ DİYAGRAMI (SPLIT VIEW) -->
+      <section id="sekme-operasyon" class="sekme-paneli aktif">
+        <div class="sunum-notu">
+          <div>
+            <span class="sunum-notu-etiket">Sunum Odak Notu (Bunu Anlat)</span>
+            <p class="sunum-notu-metin">
+              Burada <strong>Separation of Concerns</strong> ve <strong>Rich Domain Model</strong> kanıtlanır: Ön yüz baypas edilip geçersiz veri gönderilse bile istek sırasıyla FastAPI -&gt; Use Case katmanından geçer; ancak tam <strong>Domain (Gorev)</strong> halkasında saf Python istisnası ile durdurulur ve <strong>Infrastructure (DB)</strong> katmanına yazım engellenir.
+            </p>
+          </div>
+          <span class="rozet info">Split View · Gerçek Zamanlı Trace</span>
         </div>
 
-        <select
-          id="durum-filtre"
-          class="px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="">Tüm Durumlar</option>
-          <option value="BEKLEMEDE">Beklemede</option>
-          <option value="DEVAM_EDIYOR">Devam Ediyor</option>
-          <option value="TAMAMLANDI">Tamamlandı</option>
-          <option value="IPTAL_EDILDI">İptal Edildi</option>
-        </select>
+        <div class="split-grid">
+          <!-- Sol Panel: KPI + Baypas Anahtarı + Filtre + Kanban/Liste -->
+          <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+            <div class="kpi-serit">
+              <div class="kpi-kutu cyan">
+                <div class="kpi-etiket">Toplam</div>
+                <div id="kpi-toplam" class="kpi-deger">0</div>
+              </div>
+              <div class="kpi-kutu amber">
+                <div class="kpi-etiket">Beklemede</div>
+                <div id="kpi-beklemede" class="kpi-deger">0</div>
+              </div>
+              <div class="kpi-kutu indigo">
+                <div class="kpi-etiket">Devam Ediyor</div>
+                <div id="kpi-devam" class="kpi-deger">0</div>
+              </div>
+              <div class="kpi-kutu emerald">
+                <div class="kpi-etiket">Tamamlandı</div>
+                <div id="kpi-tamamlandi" class="kpi-deger">0</div>
+              </div>
+              <div class="kpi-kutu rose">
+                <div class="kpi-etiket">İptal Edildi</div>
+                <div id="kpi-iptal" class="kpi-deger">0</div>
+              </div>
+            </div>
 
-        <select
-          id="oncelik-filtre"
-          class="px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          <option value="">Tüm Öncelikler</option>
-          <option value="DUSUK">Düşük</option>
-          <option value="ORTA">Orta</option>
-          <option value="YUKSEK">Yüksek</option>
-          <option value="KRITIK">Kritik</option>
-        </select>
+            <div class="filtre-cubugu">
+              <div id="baypas-kutu" class="baypas-kutu">
+                <label class="baypas-label">
+                  <input id="baypas-anahtari" type="checkbox" />
+                  <span>Ön Yüzü Baypas Et (Ham Payload / Domain'i Zorla)</span>
+                </label>
+                <span id="baypas-aciklama" style="color:var(--text-muted);font-size:11.5px">
+                  Kapalı: Standart form kontrolleri aktif. Açıldığında tarayıcı doğrulaması kapatılır ve ham veri doğrudan API'ye gider.
+                </span>
+              </div>
 
-        <button
-          id="filtre-temizle-btn"
-          type="button"
-          class="px-3 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
-        >
-          Temizle
-        </button>
-      </div>
+              <div class="filtre-satir">
+                <input id="filtre-arama" type="text" class="input" style="flex:1;min-width:190px" placeholder="Başlık/açıklama ara (Türkçe .casefold uyumlu)..." />
+                <select id="filtre-durum" class="select">
+                  <option value="">Tüm Durumlar</option>
+                  <option value="BEKLEMEDE">BEKLEMEDE</option>
+                  <option value="DEVAM_EDIYOR">DEVAM_EDIYOR</option>
+                  <option value="TAMAMLANDI">TAMAMLANDI</option>
+                  <option value="IPTAL_EDILDI">IPTAL_EDILDI</option>
+                </select>
+                <select id="filtre-oncelik" class="select">
+                  <option value="">Tüm Öncelikler</option>
+                  <option value="KRITIK">KRITIK</option>
+                  <option value="YUKSEK">YUKSEK</option>
+                  <option value="ORTA">ORTA</option>
+                  <option value="DUSUK">DUSUK</option>
+                </select>
+                <button type="button" id="filtre-temizle-btn" class="btn btn-sm">Temizle</button>
+                <button type="button" id="gorev-yenile-btn" class="btn btn-sm">Yenile</button>
+                <div class="seg-anahtar">
+                  <button type="button" id="gorunum-kanban-btn" class="seg-btn aktif">Kanban</button>
+                  <button type="button" id="gorunum-liste-btn" class="seg-btn">Liste</button>
+                </div>
+              </div>
+            </div>
 
-      <div class="flex items-center justify-between sm:justify-end gap-2">
-        <div class="inline-flex rounded-lg border border-slate-300 bg-slate-100 p-0.5">
-          <button
-            id="kanban-gorunum-btn"
-            type="button"
-            class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-indigo-600 shadow-xs transition"
-          >
-            Kanban
-          </button>
-          <button
-            id="liste-gorunum-btn"
-            type="button"
-            class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 transition"
-          >
-            Liste
-          </button>
+            <div id="kanban-alani" class="kanban-4kolon">
+              <div class="kanban-sutun">
+                <div class="sutun-baslik beklemede"><span>Beklemede</span><span id="sutun-say-beklemede">0</span></div>
+                <div id="sutun-beklemede" style="display:flex;flex-direction:column;gap:8px"></div>
+              </div>
+              <div class="kanban-sutun">
+                <div class="sutun-baslik devam"><span>Devam Ediyor</span><span id="sutun-say-devam">0</span></div>
+                <div id="sutun-devam" style="display:flex;flex-direction:column;gap:8px"></div>
+              </div>
+              <div class="kanban-sutun">
+                <div class="sutun-baslik tamamlandi"><span>Tamamlandı</span><span id="sutun-say-tamamlandi">0</span></div>
+                <div id="sutun-tamamlandi" style="display:flex;flex-direction:column;gap:8px"></div>
+              </div>
+              <div class="kanban-sutun">
+                <div class="sutun-baslik iptal"><span>İptal Edildi</span><span id="sutun-say-iptal">0</span></div>
+                <div id="sutun-iptal" style="display:flex;flex-direction:column;gap:8px"></div>
+              </div>
+            </div>
+
+            <div id="liste-alani" class="tablo-sarici" style="display:none">
+              <table class="veri-tablo">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Görev</th>
+                    <th>Durum</th>
+                    <th>Öncelik</th>
+                    <th>Bitiş</th>
+                    <th>İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody id="liste-govde"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Sağ Panel: 4 Halkalı İnteraktif Katman Akış Diyagramı & Trace -->
+          <aside class="panel katman-akis-panel">
+            <div class="panel-baslik-satir" style="margin-bottom:4px">
+              <div>
+                <h2 class="panel-baslik">Canlı 4 Halkalı Katman Akış Diyagramı</h2>
+                <p id="akis-ozet-satir" class="panel-alt">Bir demo senaryosu veya görev işlemi çalıştırın; katman geçişleri canlı aydınlansın.</p>
+              </div>
+              <span id="akis-iz-rozeti" class="uuid-tag">BEKLENİYOR</span>
+            </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <span id="akis-http-rozet" class="rozet info">HTTP —</span>
+              <span id="akis-sure-rozet" class="uuid-tag">0.00 ms</span>
+              <button type="button" id="akis-loglara-git-btn" class="btn btn-sm" style="margin-left:auto">Log Konsolunda Aç</button>
+            </div>
+
+            <div id="halka-zincir" class="halka-zincir">
+              <div class="halka-kutu" data-halka="Presentation">
+                <div class="halka-ust">
+                  <span class="halka-ad">4. Presentation: FastAPI Router</span>
+                  <span class="rozet info">HAZIR</span>
+                </div>
+                <div class="halka-bilesen">presentation/api/gorev_router.py</div>
+              </div>
+              <div class="halka-ok-isaret">↓ DTO Dönüşümü (Pydantic -&gt; Application Girdi)</div>
+              <div class="halka-kutu" data-halka="Application">
+                <div class="halka-ust">
+                  <span class="halka-ad">3. Application: Use Case</span>
+                  <span class="rozet info">HAZIR</span>
+                </div>
+                <div class="halka-bilesen">application/use_cases/*</div>
+              </div>
+              <div class="halka-ok-isaret">↓ İş Kuralı ve Durum Makinesi Denetimi</div>
+              <div class="halka-kutu" data-halka="Domain">
+                <div class="halka-ust">
+                  <span class="halka-ad">2. Domain: Gorev Entity &amp; İş Kuralı</span>
+                  <span class="rozet info">HAZIR</span>
+                </div>
+                <div class="halka-bilesen">domain/entities/gorev.py · value_objects/</div>
+              </div>
+              <div class="halka-ok-isaret">↓ Soyut GorevRepositoryArayuzu (DIP)</div>
+              <div class="halka-kutu" data-halka="Infrastructure">
+                <div class="halka-ust">
+                  <span class="halka-ad">1. Infrastructure: Repository Adaptörü</span>
+                  <span class="rozet info">HAZIR</span>
+                </div>
+                <div class="halka-bilesen">SqliteGorevRepository / InMemoryGorevRepository</div>
+              </div>
+            </div>
+
+            <div id="akis-istisna-alani" class="istisna-kutusu basari">
+              <div style="font-size:11px;font-weight:700;color:var(--cyan);font-family:var(--font-mono)">KATMAN ÇIKTI &amp; GLOBAL EXCEPTION HANDLER MÜFETTİŞİ</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">
+                Herhangi bir işlem çalıştırdığınızda fırlatılan Domain istisna sınıfı veya dönen API JSON çıktısı burada sergilenir.
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- SEKME 2: DOMAIN İŞ KURALLARI & 4x4 DURUM MAKİNESİ LABORATUVARI -->
+      <section id="sekme-kurallar" class="sekme-paneli">
+        <div class="sunum-notu">
+          <div>
+            <span class="sunum-notu-etiket">Sunum Odak Notu (Bunu Anlat)</span>
+            <p class="sunum-notu-metin">
+              Burada <strong>Rich Domain Model</strong> ve <strong>Anemic Model'den Kaçınma</strong> vurgulanır: Başlık sınırı, geçmiş tarih engeli, tamamlanmış görev kilidi, kritik görev silme koruması ve 4×4 durum geçiş matrisi doğrudan Domain katmanı tarafından zorlanır; veritabanı veya router değişse bile kurallar korunur.
+            </p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="lab-durum-sayac" class="rozet info">0 / 5 Kural Doğrulandı</span>
+            <button type="button" id="lab-hepsini-test-et-btn" class="btn btn-primary btn-sm">5 Zorunlu Kuralı Canlı Test Et</button>
+          </div>
         </div>
 
-        <button
-          id="yenile-btn"
-          type="button"
-          title="Görevleri Yenile"
-          class="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-300 rounded-lg transition"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
-      </div>
-    </section>
+        <div id="is-kurallari-izgara" class="kurallar-izgara"></div>
 
-    <!-- Kanban Görünümü -->
-    <section id="kanban-alani" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"></section>
+        <div class="matris-ve-fsm">
+          <div class="panel">
+            <div class="panel-baslik-satir">
+              <div>
+                <h2 class="panel-baslik">4×4 Durum Geçiş Matrisi (Tıklanabilir Canlı Test)</h2>
+                <p class="panel-alt">Herhangi bir hücreye tıklayarak kaynak durumdan hedef duruma gerçek PATCH isteği gönderin.</p>
+              </div>
+              <span class="rozet ok">GorevDurumu.gecis_yapilabilir_mi()</span>
+            </div>
+            <div id="matris-tablo-alani" style="overflow-x:auto"></div>
+            <div id="matris-sonuc-kutusu" style="margin-top:12px">
+              <div class="istisna-kutusu basari">
+                <strong style="font-size:12px;color:var(--cyan)">Matris Test Çıktısı:</strong> Yukarıdaki 16 hücreden birine tıkladığınızda sistem gerçek bir deneme göreviyle API üzerinden geçişi test eder ve dönen HTTP kodunu + JSON yanıtını burada gösterir.
+              </div>
+            </div>
+          </div>
 
-    <!-- Liste Görünümü -->
-    <section id="liste-alani" class="hidden bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
-              <th class="px-4 py-3">Görev</th>
-              <th class="px-4 py-3">Öncelik</th>
-              <th class="px-4 py-3">Durum</th>
-              <th class="px-4 py-3">Son Teslim</th>
-              <th class="px-4 py-3">Durum Geçişleri</th>
-              <th class="px-4 py-3 text-right">İşlemler</th>
-            </tr>
-          </thead>
-          <tbody id="liste-govde" class="divide-y divide-slate-200 text-sm"></tbody>
-        </table>
-      </div>
-    </section>
+          <div class="panel">
+            <div class="panel-baslik-satir">
+              <div>
+                <h2 class="panel-baslik">Canlı Durum Makinesi (Finite State Machine)</h2>
+                <p class="panel-alt">Düğümlerdeki sayılar aktif veritabanındaki gerçek görev dağılımını gösterir.</p>
+              </div>
+            </div>
+            <div class="svg-sahne">
+              <svg viewBox="0 0 500 320" role="img" aria-label="Durum Makinesi SVG">
+                <defs>
+                  <marker id="okYesil" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#10b981" /></marker>
+                  <marker id="okKirmizi" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#f43f5e" /></marker>
+                </defs>
+                <path d="M 162 82 L 322 82" stroke="#10b981" stroke-width="2.2" fill="none" marker-end="url(#okYesil)" />
+                <text x="242" y="73" text-anchor="middle" fill="#34d399" font-size="10" font-family="monospace">DEVAM_EDIYOR</text>
+                <path d="M 322 106 L 162 106" stroke="#10b981" stroke-width="1.8" stroke-dasharray="4 3" fill="none" marker-end="url(#okYesil)" />
+                <text x="242" y="121" text-anchor="middle" fill="#6ee7b7" font-size="10" font-family="monospace">BEKLEMEDE (Geri Al)</text>
+                <path d="M 398 132 L 398 218" stroke="#10b981" stroke-width="2.2" fill="none" marker-end="url(#okYesil)" />
+                <text x="442" y="178" text-anchor="middle" fill="#34d399" font-size="10" font-family="monospace">TAMAMLA</text>
+                <path d="M 96 132 L 96 218" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#okYesil)" />
+                <text x="58" y="178" text-anchor="middle" fill="#34d399" font-size="10" font-family="monospace">IPTAL</text>
+                <path d="M 332 128 L 154 224" stroke="#10b981" stroke-width="1.8" fill="none" marker-end="url(#okYesil)" />
+                <text x="220" y="176" text-anchor="middle" fill="#34d399" font-size="10" font-family="monospace">IPTAL</text>
+                <path d="M 150 128 L 336 224" stroke="#f43f5e" stroke-width="2" stroke-dasharray="5 4" fill="none" marker-end="url(#okKirmizi)" />
+                <text x="285" y="188" text-anchor="middle" fill="#fda4af" font-size="10" font-weight="700" font-family="monospace">YASAK (400)</text>
 
-  </main>
+                <rect x="34" y="60" width="126" height="68" rx="11" fill="#451a03" stroke="#f59e0b" stroke-width="2" />
+                <text x="97" y="86" text-anchor="middle" fill="#fcd34d" font-size="11.5" font-weight="700" font-family="monospace">BEKLEMEDE</text>
+                <text id="fsm-say-beklemede" x="97" y="109" text-anchor="middle" fill="#fef3c7" font-size="12.5" font-weight="800" font-family="monospace">0 görev</text>
 
-  <!-- Alt Bilgi -->
-  <footer class="border-t border-slate-200 bg-white py-4 mt-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
-      <span>Clean Architecture Görev Yönetim Sistemi &bull; Domain / Application / Infrastructure / Presentation</span>
-      <span>REST API: <code class="px-1.5 py-0.5 bg-slate-100 rounded text-slate-700">/api/v1/gorevler</code></span>
-    </div>
-  </footer>
+                <rect x="326" y="60" width="144" height="68" rx="11" fill="#1e1b4b" stroke="#6366f1" stroke-width="2" />
+                <text x="398" y="86" text-anchor="middle" fill="#a5b4fc" font-size="11.5" font-weight="700" font-family="monospace">DEVAM_EDIYOR</text>
+                <text id="fsm-say-devam" x="398" y="109" text-anchor="middle" fill="#e0e7ff" font-size="12.5" font-weight="800" font-family="monospace">0 görev</text>
+
+                <rect x="326" y="222" width="144" height="72" rx="11" fill="#064e3b" stroke="#10b981" stroke-width="2" />
+                <text x="398" y="246" text-anchor="middle" fill="#6ee7b7" font-size="11.5" font-weight="700" font-family="monospace">TAMAMLANDI</text>
+                <text id="fsm-say-tamamlandi" x="398" y="268" text-anchor="middle" fill="#d1fae5" font-size="12.5" font-weight="800" font-family="monospace">0 görev</text>
+                <text x="398" y="285" text-anchor="middle" fill="#a7f3d0" font-size="9" font-family="monospace">[KİLİTLİ TERMİNAL]</text>
+
+                <rect x="34" y="222" width="126" height="72" rx="11" fill="#4c0519" stroke="#f43f5e" stroke-width="2" />
+                <text x="97" y="246" text-anchor="middle" fill="#fda4af" font-size="11.5" font-weight="700" font-family="monospace">IPTAL_EDILDI</text>
+                <text id="fsm-say-iptal" x="97" y="268" text-anchor="middle" fill="#ffe4e6" font-size="12.5" font-weight="800" font-family="monospace">0 görev</text>
+                <text x="97" y="285" text-anchor="middle" fill="#fecdd3" font-size="9" font-family="monospace">[TERMİNAL]</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEKME 3: CLEAN ARCHITECTURE, SOLID & CANLI AST DENETİMİ -->
+      <section id="sekme-mimari" class="sekme-paneli">
+        <div class="sunum-notu">
+          <div>
+            <span class="sunum-notu-etiket">Sunum Odak Notu (Bunu Anlat)</span>
+            <p class="sunum-notu-metin">
+              Burada <strong>Dependency Rule (Bağımlılık Kuralı)</strong> ve <strong>SOLID (S-O-L-I-D)</strong> ilkeleri kanıtlanır: Python <code>ast</code> modülü çalışma zamanında <code>domain/</code> ve <code>application/</code> dosyalarını tarayarak dış çerçeve importunun <strong>0</strong> olduğunu doğrular.
+            </p>
+          </div>
+          <button type="button" id="ast-denetim-calistir-btn" class="btn btn-cyan btn-sm">Canlı AST Denetimi Çalıştır</button>
+        </div>
+
+        <div id="katman-dizin-izgara" class="katman-agac-izgara"></div>
+
+        <div class="mimari-izgara">
+          <div class="panel">
+            <div class="panel-baslik-satir">
+              <div>
+                <h2 class="panel-baslik">İçe Doğru Bağımlılık Halkaları (Tıklanabilir)</h2>
+                <p class="panel-alt">Halkaya tıklayarak katmandaki Python dosyalarını görüntüleyin.</p>
+              </div>
+              <span id="ast-toplam-etiket" class="rozet ok">0 Dış Bağımlılık İhlali</span>
+            </div>
+            <div class="svg-sahne">
+              <svg viewBox="0 0 500 320" role="img" aria-label="Clean Architecture Halkaları">
+                <defs>
+                  <marker id="okCam" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#22d3ee" /></marker>
+                </defs>
+                <g class="tiklanir-halka" data-halka-katman="presentation">
+                  <rect x="16" y="14" width="468" height="292" rx="20" fill="#172554" fill-opacity="0.45" stroke="#3b82f6" stroke-width="2" />
+                  <text x="32" y="38" fill="#93c5fd" font-size="11.5" font-weight="700" font-family="monospace">4. PRESENTATION (FastAPI + Kokpit SPA + Şemalar)</text>
+                </g>
+                <g class="tiklanir-halka" data-halka-katman="infrastructure">
+                  <rect x="48" y="52" width="404" height="236" rx="16" fill="#3b0764" fill-opacity="0.45" stroke="#a855f7" stroke-width="2" />
+                  <text x="64" y="76" fill="#d8b4fe" font-size="11.5" font-weight="700" font-family="monospace">3. INFRASTRUCTURE (SQLite / InMemory / DI / AST)</text>
+                </g>
+                <g class="tiklanir-halka" data-halka-katman="application">
+                  <rect x="84" y="92" width="332" height="178" rx="14" fill="#064e3b" fill-opacity="0.52" stroke="#10b981" stroke-width="2" />
+                  <text x="100" y="116" fill="#6ee7b7" font-size="11.5" font-weight="700" font-family="monospace">2. APPLICATION (UseCase + DTO — Sadece Domain)</text>
+                </g>
+                <g class="tiklanir-halka" data-halka-katman="domain">
+                  <rect x="126" y="134" width="248" height="118" rx="12" fill="#7c2d12" fill-opacity="0.6" stroke="#f59e0b" stroke-width="2.5" />
+                  <text x="250" y="168" text-anchor="middle" fill="#fde68a" font-size="12.5" font-weight="800" font-family="monospace">1. DOMAIN (ÇEKİRDEK)</text>
+                  <text x="250" y="190" text-anchor="middle" fill="#fed7aa" font-size="10.5" font-family="monospace">Gorev + Value Objects + ABC Port</text>
+                  <text x="250" y="216" text-anchor="middle" fill="#fef3c7" font-size="10.5" font-weight="800" font-family="monospace">DIŞ BAĞIMLILIK SAYISI: 0</text>
+                </g>
+                <path d="M 32 182 L 118 182" stroke="#22d3ee" stroke-width="2.2" marker-end="url(#okCam)" />
+              </svg>
+            </div>
+            <div id="halka-secim-bilgisi" style="margin-top:10px;font-size:12px;color:var(--text-muted)">
+              Katman seçmek için halkalardan birine tıklayın.
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-baslik-satir">
+              <div>
+                <h2 class="panel-baslik">Canlı Sıralama (Sequence) Akışı</h2>
+                <p id="siralama-alt-baslik" class="panel-alt">Son gerçek API çağrısının katmanlar arası sıralama izi.</p>
+              </div>
+            </div>
+            <div id="siralama-svg-alani" class="svg-sahne"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-baslik-satir">
+            <div>
+              <h2 class="panel-baslik">SOLID Prensipleri Canlı Kod Eşleştirmesi</h2>
+              <p class="panel-alt">Herhangi bir karta tıklayarak ilgili Python kaynak dosyasını alttaki kod okuyucuda açın.</p>
+            </div>
+          </div>
+          <div id="solid-izgara" class="solid-izgara"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-baslik-satir">
+            <div>
+              <h2 id="ast-rapor-baslik" class="panel-baslik">Canlı Python AST Bağımlılık Denetim Tablosu</h2>
+              <p id="ast-rapor-alt" class="panel-alt">domain/ ve application/ dahil tüm dosyalar taranıyor...</p>
+            </div>
+            <div id="ast-katman-ozet-rozetler" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+          <div class="tablo-sarici">
+            <table class="veri-tablo">
+              <thead>
+                <tr>
+                  <th>Dosya</th>
+                  <th>Katman</th>
+                  <th>Satır</th>
+                  <th>Sınıflar / Fonksiyonlar</th>
+                  <th>Katman İçi / İç Importlar</th>
+                  <th>Standart Dışı Dış Paket</th>
+                  <th>Durum</th>
+                  <th>Kod</th>
+                </tr>
+              </thead>
+              <tbody id="ast-dosya-govde"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="kod-sarici">
+          <div class="kod-ust">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <strong style="font-size:12px;color:var(--cyan)">Salt Okunur Kaynak Kod Müfettişi:</strong>
+              <select id="kod-dosya-secici" class="select" style="font-family:var(--font-mono);font-size:12px"></select>
+            </div>
+            <span id="kod-dosya-meta" class="uuid-tag">—</span>
+          </div>
+          <div id="kod-satirlar-alani" class="kod-satirlar"></div>
+        </div>
+      </section>
+
+      <!-- SEKME 4: CANLI HTTP / JSON & DEPO KARŞILAŞTIRMA DENETÇİSİ -->
+      <section id="sekme-loglar" class="sekme-paneli">
+        <div class="sunum-notu">
+          <div>
+            <span class="sunum-notu-etiket">Sunum Odak Notu (Bunu Anlat)</span>
+            <p class="sunum-notu-metin">
+              Burada <strong>Liskov Substitution (LSP)</strong> ve <strong>Dependency Inversion (DIP)</strong> gösterilir: Aynı <code>GorevRepositoryArayuzu</code> sözleşmesi altında <code>SqliteGorevRepository</code> ile <code>InMemoryGorevRepository</code> tek tıkla yer değiştirir; aşağıdaki HTTP/JSON izleri iki adaptörün de özdeş Domain kurallarıyla çalıştığını kanıtlar.
+            </p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="btn btn-cyan btn-sm" data-depo="sqlite">SQLite'a Geç</button>
+            <button type="button" class="btn btn-emerald btn-sm" data-depo="memory">In-Memory'ye Geç</button>
+          </div>
+        </div>
+
+        <div id="lsp-karsilastirma-izgara" class="lsp-izgara"></div>
+
+        <div class="filtre-cubugu">
+          <div class="filtre-satir">
+            <div class="seg-anahtar">
+              <button type="button" class="seg-btn aktif" data-log-seviye="">Tümü</button>
+              <button type="button" class="seg-btn" data-log-seviye="BASARILI">Başarılı (2xx)</button>
+              <button type="button" class="seg-btn" data-log-seviye="DOMAIN_IHLALI">Domain İhlali</button>
+              <button type="button" class="seg-btn" data-log-seviye="HATA">Hata</button>
+            </div>
+            <input id="log-arama-input" type="text" class="input" style="flex:1;min-width:200px" placeholder="Trace ID, endpoint, UseCase veya hata kodu ara..." />
+            <button type="button" id="log-canli-btn" class="btn btn-emerald btn-sm">Canlı İzleme: AÇIK</button>
+            <button type="button" id="log-yenile-btn" class="btn btn-sm">Yenile</button>
+            <button type="button" id="log-indir-btn" class="btn btn-cyan btn-sm">JSON İndir</button>
+            <button type="button" id="log-temizle-btn" class="btn btn-rose btn-sm">Temizle</button>
+          </div>
+        </div>
+
+        <div class="log-bolunmus">
+          <div class="panel">
+            <div class="panel-baslik-satir">
+              <h2 class="panel-baslik">HTTP / JSON İşlem Akışı (<span id="log-adet-span">0</span> kayıt)</h2>
+              <span class="uuid-tag">En yeniden eskiye · Açılır JSON gövdeleri</span>
+            </div>
+            <div id="log-listesi-alani" class="log-listesi"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-baslik-satir">
+              <h2 class="panel-baslik">Seçili İz Katman Detayı</h2>
+              <span id="secili-iz-etiket" class="uuid-tag">Seçilmedi</span>
+            </div>
+            <div id="secili-iz-detay" style="font-size:12px;color:var(--text-muted)">
+              Soldan bir HTTP işlem kaydına tıklayarak 4 katman yürütme zincirini, kaynak istisna sınıfını ve tam JSON yükünü inceleyin.
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
 
   <!-- Görev Oluştur / Düzenle Modalı -->
-  <div id="gorev-modal" class="hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden border border-slate-200">
-      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-        <h2 id="modal-baslik" class="text-base font-bold text-slate-900">Yeni Görev Oluştur</h2>
-        <button id="modal-kapat-btn" type="button" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+  <div id="gorev-modal" class="modal-arka" role="dialog" aria-modal="true">
+    <div class="modal-kart">
+      <div class="modal-ust">
+        <div>
+          <h3 id="modal-baslik" style="margin:0;font-size:15px;font-weight:700">Yeni Görev Oluştur</h3>
+          <p id="modal-alt-bilgi" style="margin:2px 0 0;font-size:11px;color:var(--text-muted)">Standart doğrulama veya Baypas modu ile Domain kurallarını deneyin.</p>
+        </div>
+        <button type="button" id="modal-kapat-btn" class="btn btn-sm">Kapat</button>
       </div>
 
-      <form id="gorev-form" class="p-6 space-y-4">
+      <form id="gorev-form" class="modal-govde">
         <input type="hidden" id="form-gorev-id" />
 
-        <div>
-          <label for="form-baslik" class="block text-xs font-semibold text-slate-700 mb-1">
-            Görev Başlığı <span class="text-rose-500">*</span>
-            <span class="font-normal text-slate-400">(3-100 karakter, Domain doğrulamalı)</span>
-          </label>
-          <input
-            id="form-baslik"
-            type="text"
-            placeholder="Örn: Mimari dokümantasyonu tamamla"
-            class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+        <div id="zehirli-payload-seridi" style="display:none;gap:6px;flex-wrap:wrap;padding:8px 10px;border-radius:8px;background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.4)">
+          <span style="font-size:11px;font-weight:700;color:#fda4af;width:100%">Baypas Aktif — Domain'i Zorlamak İçin Hızlı Veri Doldur:</span>
+          <button type="button" id="zehir-kisa-baslik-btn" class="btn btn-rose btn-sm">Kısa Başlık ("ab") Doldur -&gt; 422</button>
+          <button type="button" id="zehir-gecmis-tarih-btn" class="btn btn-rose btn-sm">Geçmiş Tarih Doldur -&gt; 422</button>
         </div>
 
-        <div>
-          <label for="form-aciklama" class="block text-xs font-semibold text-slate-700 mb-1">Açıklama</label>
-          <textarea
-            id="form-aciklama"
-            rows="3"
-            placeholder="Görev ile ilgili teknik detayları ve beklentileri yazın..."
-            class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          ></textarea>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label for="form-baslik" style="font-size:12px;font-weight:600;color:var(--text-muted)">Başlık (Domain Kuralı: 3–100 karakter)</label>
+          <input id="form-baslik" type="text" class="input" required minlength="3" maxlength="100" placeholder="Örn: API Güvenlik Katmanını Doğrula" />
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="form-oncelik" class="block text-xs font-semibold text-slate-700 mb-1">Öncelik</label>
-            <select
-              id="form-oncelik"
-              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="DUSUK">Düşük</option>
-              <option value="ORTA" selected>Orta</option>
-              <option value="YUKSEK">Yüksek</option>
-              <option value="KRITIK">Kritik</option>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label for="form-aciklama" style="font-size:12px;font-weight:600;color:var(--text-muted)">Açıklama</label>
+          <textarea id="form-aciklama" rows="3" class="textarea" placeholder="Teknik kapsam ve kabul ölçütleri..."></textarea>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label for="form-oncelik" style="font-size:12px;font-weight:600;color:var(--text-muted)">Öncelik</label>
+            <select id="form-oncelik" class="select">
+              <option value="DUSUK">DUSUK</option>
+              <option value="ORTA" selected>ORTA</option>
+              <option value="YUKSEK">YUKSEK</option>
+              <option value="KRITIK">KRITIK</option>
             </select>
           </div>
-
-          <div>
-            <label for="form-bitis-tarihi" class="block text-xs font-semibold text-slate-700 mb-1">
-              Son Teslim Tarihi
-            </label>
-            <input
-              id="form-bitis-tarihi"
-              type="datetime-local"
-              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label for="form-bitis" style="font-size:12px;font-weight:600;color:var(--text-muted)">Bitiş Tarihi (Geçmiş tarih engelli)</label>
+            <input id="form-bitis" type="datetime-local" class="input" />
           </div>
         </div>
 
-        <div id="tarih-temizle-alani" class="hidden items-center gap-2">
-          <input id="form-tarih-temizle" type="checkbox" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-          <label for="form-tarih-temizle" class="text-xs text-slate-600">Mevcut son teslim tarihini kaldır</label>
-        </div>
+        <label id="tarih-temizle-sarici" style="display:none;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)">
+          <input id="form-tarih-temizle" type="checkbox" />
+          <span>Mevcut bitiş tarihini kaldır</span>
+        </label>
 
-        <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
-          <button
-            id="modal-iptal-btn"
-            type="button"
-            class="px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition"
-          >
-            Vazgeç
-          </button>
-          <button
-            type="submit"
-            class="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-xs transition"
-          >
-            Kaydet
-          </button>
+        <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:8px;border-top:1px solid var(--border)">
+          <button type="button" id="modal-iptal-btn" class="btn">Vazgeç</button>
+          <button type="submit" class="btn btn-primary">API'ye Gönder</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- İş Kuralları Bilgi Modalı -->
-  <div id="kurallar-modal" class="hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full overflow-hidden border border-slate-200">
-      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-        <h2 class="text-base font-bold text-slate-900">Zorunlu Domain İş Kuralları</h2>
-        <button id="kurallar-kapat-btn" type="button" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+  <!-- Sağ Görev Detay Çekmecesi -->
+  <div id="gorev-cekmece" class="cekmece-arka">
+    <div class="cekmece-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:10px">
+        <div>
+          <h3 id="cekmece-baslik" style="margin:0;font-size:15px;font-weight:700">Görev Detayı</h3>
+          <span id="cekmece-id" class="uuid-tag">—</span>
+        </div>
+        <button type="button" id="cekmece-kapat-btn" class="btn btn-sm">Kapat</button>
       </div>
-      <div class="p-6 space-y-3 text-sm text-slate-700">
-        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
-          <p class="font-semibold text-slate-900">1. Geçmiş Tarih Kuralı (422 - GECMIS_TARIH)</p>
-          <p class="text-xs text-slate-600 mt-1">Son teslim tarihi geçmiş bir tarih olan görev oluşturulamaz ve güncellenemez.</p>
-        </div>
-        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
-          <p class="font-semibold text-slate-900">2. Durum Makinesi (400 - GECERSIZ_DURUM_GECISI)</p>
-          <p class="text-xs text-slate-600 mt-1">BEKLEMEDE durumundan doğrudan TAMAMLANDI durumuna geçilemez; önce DEVAM_EDIYOR aşamasından geçmelidir. IPTAL_EDILDI görev yeniden başlatılamaz.</p>
-        </div>
-        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
-          <p class="font-semibold text-slate-900">3. Tamamlanmış Görev Kilidi (400 - KILITLI_GOREV)</p>
-          <p class="text-xs text-slate-600 mt-1">Durumu TAMAMLANDI olan bir görev salt okunurdur; başlığı, açıklaması, önceliği veya bitiş tarihi değiştirilemez.</p>
-        </div>
-        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
-          <p class="font-semibold text-slate-900">4. Kritik Görev Silme Koruması (400 - KRITIK_GOREV_SILINEMEZ)</p>
-          <p class="text-xs text-slate-600 mt-1">Önceliği KRITIK ve durumu DEVAM_EDIYOR olan görev doğrudan silinemez; önce IPTAL_EDILDI durumuna çekilmelidir.</p>
-        </div>
-        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
-          <p class="font-semibold text-slate-900">5. Başlık Doğrulaması (422 - GECERSIZ_BASLIK)</p>
-          <p class="text-xs text-slate-600 mt-1">Görev başlığı boş olamaz ve kırpıldıktan sonra en az 3, en fazla 100 karakter olmalıdır.</p>
-        </div>
-      </div>
+      <div id="cekmece-icerik" style="display:flex;flex-direction:column;gap:12px"></div>
     </div>
   </div>
 
-  <script>
-    const API_URL = '/api/v1/gorevler';
-    const SISTEM_URL = '/api/v1/sistem';
-
-    const DURUM_BILGISI = {
-      BEKLEMEDE: {
-        etiket: 'Beklemede',
-        sutunBaslikSinifi: 'text-amber-700 bg-amber-50 border-amber-200',
-        rozetSinifi: 'bg-amber-100 text-amber-800 border-amber-200',
-        butonEtiketi: 'Beklet',
-        butonSinifi: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-      },
-      DEVAM_EDIYOR: {
-        etiket: 'Devam Ediyor',
-        sutunBaslikSinifi: 'text-blue-700 bg-blue-50 border-blue-200',
-        rozetSinifi: 'bg-blue-100 text-blue-800 border-blue-200',
-        butonEtiketi: 'Başlat',
-        butonSinifi: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-      },
-      TAMAMLANDI: {
-        etiket: 'Tamamlandı',
-        sutunBaslikSinifi: 'text-emerald-700 bg-emerald-50 border-emerald-200',
-        rozetSinifi: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        butonEtiketi: 'Tamamla',
-        butonSinifi: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-      },
-      IPTAL_EDILDI: {
-        etiket: 'İptal Edildi',
-        sutunBaslikSinifi: 'text-rose-700 bg-rose-50 border-rose-200',
-        rozetSinifi: 'bg-rose-100 text-rose-800 border-rose-200',
-        butonEtiketi: 'İptal Et',
-        butonSinifi: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-      }
-    };
-
-    const ONCELIK_BILGISI = {
-      DUSUK: { etiket: 'Düşük', sinif: 'bg-slate-100 text-slate-700 border-slate-200' },
-      ORTA: { etiket: 'Orta', sinif: 'bg-sky-100 text-sky-800 border-sky-200' },
-      YUKSEK: { etiket: 'Yüksek', sinif: 'bg-orange-100 text-orange-800 border-orange-200' },
-      KRITIK: { etiket: 'Kritik', sinif: 'bg-red-100 text-red-800 border-red-300 font-bold' }
-    };
-
-    let aktifGorunum = 'kanban';
-    let yuklenenGorevler = [];
-    let aramaZamanlayici = null;
-
-    function htmlKacis(metin) {
-      if (metin === null || metin === undefined) return '';
-      return String(metin)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function tarihFormatla(isoMetin) {
-      if (!isoMetin) return 'Belirtilmedi';
-      const tarih = new Date(isoMetin);
-      if (Number.isNaN(tarih.getTime())) return 'Geçersiz Tarih';
-      return tarih.toLocaleString('tr-TR', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-
-    function inputIcinTarihFormatla(isoMetin) {
-      if (!isoMetin) return '';
-      const t = new Date(isoMetin);
-      if (Number.isNaN(t.getTime())) return '';
-      const pad = (n) => String(n).padStart(2, '0');
-      return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}T${pad(t.getHours())}:${pad(t.getMinutes())}`;
-    }
-
-    function toastGoster(baslik, mesaj, tip = 'basari') {
-      const alan = document.getElementById('toast-alani');
-      const kart = document.createElement('div');
-      const renkSinifi = tip === 'hata'
-        ? 'bg-rose-50 border-rose-300 text-rose-900'
-        : 'bg-emerald-50 border-emerald-300 text-emerald-900';
-      const baslikSinifi = tip === 'hata' ? 'text-rose-800' : 'text-emerald-800';
-
-      kart.className = `toast-anim pointer-events-auto rounded-xl border p-4 shadow-lg flex items-start justify-between gap-3 ${renkSinifi}`;
-      kart.innerHTML = `
-        <div class="min-w-0">
-          <p class="text-xs font-bold uppercase tracking-wide ${baslikSinifi}">${htmlKacis(baslik)}</p>
-          <p class="text-sm mt-1 break-words">${htmlKacis(mesaj)}</p>
-        </div>
-        <button type="button" class="text-slate-400 hover:text-slate-700 shrink-0 text-sm font-bold px-1">&times;</button>
-      `;
-
-      kart.querySelector('button').addEventListener('click', () => kart.remove());
-      alan.appendChild(kart);
-
-      setTimeout(() => {
-        if (kart.parentElement) kart.remove();
-      }, tip === 'hata' ? 6500 : 3800);
-    }
-
-    async function apiIstegi(url, secenekler = {}) {
-      const yanit = await fetch(url, {
-        headers: { 'Content-Type': 'application/json', ...(secenekler.headers || {}) },
-        ...secenekler
-      });
-
-      if (yanit.status === 204) return null;
-
-      let govde = null;
-      try {
-        govde = await yanit.json();
-      } catch (_) {
-        govde = null;
-      }
-
-      if (!yanit.ok) {
-        if (govde && govde.hata_kodu && govde.mesaj) {
-          throw new Error(`${govde.hata_kodu} (${yanit.status}): ${govde.mesaj}`);
-        }
-        if (govde && Array.isArray(govde.detail)) {
-          const ilk = govde.detail[0];
-          throw new Error(`Doğrulama Hatası (${yanit.status}): ${ilk?.msg || 'Geçersiz istek'}`);
-        }
-        throw new Error(`İstek başarısız (${yanit.status})`);
-      }
-
-      return govde;
-    }
-
-    async function sistemBilgisiniYukle() {
-      try {
-        const bilgi = await apiIstegi(SISTEM_URL);
-        const repoMetni = document.getElementById('repo-metni');
-        const repo = (bilgi.aktif_repository || 'bilinmiyor').toUpperCase();
-        repoMetni.textContent = `REPO: ${repo}`;
-      } catch (_) {
-        document.getElementById('repo-metni').textContent = 'REPO: HATA';
-      }
-    }
-
-    async function gorevleriYukle() {
-      const params = new URLSearchParams();
-      const durum = document.getElementById('durum-filtre').value;
-      const oncelik = document.getElementById('oncelik-filtre').value;
-      const arama = document.getElementById('arama-input').value.trim();
-
-      if (durum) params.set('durum', durum);
-      if (oncelik) params.set('oncelik', oncelik);
-      if (arama) params.set('arama', arama);
-
-      const sorgu = params.toString() ? `?${params.toString()}` : '';
-      try {
-        yuklenenGorevler = await apiIstegi(`${API_URL}${sorgu}`);
-        istatistikleriGuncelle(yuklenenGorevler);
-        gorunumuCiz();
-      } catch (hata) {
-        toastGoster('Yükleme Hatası', hata.message, 'hata');
-      }
-    }
-
-    function istatistikleriGuncelle(gorevler) {
-      document.getElementById('stat-toplam').textContent = gorevler.length;
-      document.getElementById('stat-beklemede').textContent = gorevler.filter(g => g.durum === 'BEKLEMEDE').length;
-      document.getElementById('stat-devam').textContent = gorevler.filter(g => g.durum === 'DEVAM_EDIYOR').length;
-      document.getElementById('stat-tamamlandi').textContent = gorevler.filter(g => g.durum === 'TAMAMLANDI').length;
-    }
-
-    function durumGecisButonlariHtml(gorev) {
-      const izinli = gorev.izinli_gecisler || [];
-      if (izinli.length === 0) {
-        return `<span class="text-[11px] italic text-slate-400">Son durum (geçiş kapalı)</span>`;
-      }
-      return izinli.map(hedef => {
-        const bilgi = DURUM_BILGISI[hedef];
-        return `
-          <button
-            type="button"
-            onclick="durumDegistir('${htmlKacis(gorev.id)}', '${htmlKacis(hedef)}')"
-            class="px-2.5 py-1 text-xs font-semibold rounded-md border transition ${bilgi.butonSinifi}"
-          >
-            &rarr; ${htmlKacis(bilgi.butonEtiketi)}
-          </button>
-        `;
-      }).join('');
-    }
-
-    function hizliTestSecicisiHtml(gorev) {
-      const tumDurumlar = ['BEKLEMEDE', 'DEVAM_EDIYOR', 'TAMAMLANDI', 'IPTAL_EDILDI'];
-      const secenekler = tumDurumlar.map(d =>
-        `<option value="${d}" ${gorev.durum === d ? 'selected' : ''}>${DURUM_BILGISI[d].etiket}</option>`
-      ).join('');
-      return `
-        <select
-          aria-label="Durum seç veya kuralı test et"
-          onchange="if (this.value !== '${gorev.durum}') { durumDegistir('${htmlKacis(gorev.id)}', this.value); }"
-          class="text-[11px] border border-slate-200 rounded-md px-2 py-1 bg-slate-50 text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          title="Durum Makinesini doğrudan test etmek için hedef durum seçin"
-        >
-          ${secenekler}
-        </select>
-      `;
-    }
-
-    function kanbanCiz() {
-      const alan = document.getElementById('kanban-alani');
-      const durumSirasi = ['BEKLEMEDE', 'DEVAM_EDIYOR', 'TAMAMLANDI', 'IPTAL_EDILDI'];
-
-      alan.innerHTML = durumSirasi.map(durumKodu => {
-        const bilgi = DURUM_BILGISI[durumKodu];
-        const kolonGorevleri = yuklenenGorevler.filter(g => g.durum === durumKodu);
-
-        const kartlarHtml = kolonGorevleri.length === 0
-          ? `<div class="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center text-xs text-slate-400">Bu kolonda görev yok</div>`
-          : kolonGorevleri.map(gorev => {
-              const oncelikBilgi = ONCELIK_BILGISI[gorev.oncelik] || ONCELIK_BILGISI.ORTA;
-              const kilitliMi = gorev.durum === 'TAMAMLANDI';
-              const kritikSilinemezMi = gorev.oncelik === 'KRITIK' && gorev.durum === 'DEVAM_EDIYOR';
-
-              return `
-                <article class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs hover:shadow-md transition flex flex-col gap-3">
-                  <div class="flex items-start justify-between gap-2">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] border ${oncelikBilgi.sinif}">
-                      ${htmlKacis(oncelikBilgi.etiket)}
-                    </span>
-                    <div class="flex items-center gap-1">
-                      ${kilitliMi ? `<span title="Tamamlanmış görev salt okunurdur" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">&#128274; Kilitli</span>` : ''}
-                      ${kritikSilinemezMi ? `<span title="Kritik ve devam eden görev doğrudan silinemez" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">&#128737; Korumalı</span>` : ''}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 class="text-sm font-bold text-slate-900 break-words">${htmlKacis(gorev.baslik)}</h3>
-                    ${gorev.aciklama ? `<p class="text-xs text-slate-600 mt-1 line-clamp-3 break-words">${htmlKacis(gorev.aciklama)}</p>` : ''}
-                  </div>
-
-                  <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span>Son Teslim: <strong>${htmlKacis(tarihFormatla(gorev.bitis_tarihi))}</strong></span>
-                  </div>
-
-                  <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
-                    ${durumGecisButonlariHtml(gorev)}
-                  </div>
-
-                  <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                    ${hizliTestSecicisiHtml(gorev)}
-                    <div class="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onclick="duzenleModalAc('${htmlKacis(gorev.id)}')"
-                        class="px-2 py-1 text-xs font-semibold text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition"
-                      >
-                        Düzenle
-                      </button>
-                      <button
-                        type="button"
-                        onclick="gorevSil('${htmlKacis(gorev.id)}')"
-                        class="px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-md transition"
-                      >
-                        Sil
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              `;
-            }).join('');
-
-        return `
-          <div class="bg-slate-100/80 rounded-2xl border border-slate-200 p-3 flex flex-col gap-3 kanban-kolon">
-            <div class="flex items-center justify-between px-3 py-2 rounded-xl border ${bilgi.sutunBaslikSinifi}">
-              <span class="text-xs font-bold uppercase tracking-wide">${htmlKacis(bilgi.etiket)}</span>
-              <span class="px-2 py-0.5 text-xs font-bold bg-white/80 rounded-full">${kolonGorevleri.length}</span>
-            </div>
-            <div class="flex flex-col gap-3">
-              ${kartlarHtml}
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function listeCiz() {
-      const govde = document.getElementById('liste-govde');
-      if (yuklenenGorevler.length === 0) {
-        govde.innerHTML = `
-          <tr>
-            <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-400">
-              Kriterlere uyan görev bulunamadı.
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-      govde.innerHTML = yuklenenGorevler.map(gorev => {
-        const durumBilgi = DURUM_BILGISI[gorev.durum] || DURUM_BILGISI.BEKLEMEDE;
-        const oncelikBilgi = ONCELIK_BILGISI[gorev.oncelik] || ONCELIK_BILGISI.ORTA;
-        return `
-          <tr class="hover:bg-slate-50/80 transition">
-            <td class="px-4 py-3 max-w-xs">
-              <p class="font-semibold text-slate-900 break-words">${htmlKacis(gorev.baslik)}</p>
-              ${gorev.aciklama ? `<p class="text-xs text-slate-500 mt-0.5 line-clamp-2 break-words">${htmlKacis(gorev.aciklama)}</p>` : ''}
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs border ${oncelikBilgi.sinif}">
-                ${htmlKacis(oncelikBilgi.etiket)}
-              </span>
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${durumBilgi.rozetSinifi}">
-                ${htmlKacis(durumBilgi.etiket)}
-              </span>
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-xs text-slate-600">
-              ${htmlKacis(tarihFormatla(gorev.bitis_tarihi))}
-            </td>
-            <td class="px-4 py-3">
-              <div class="flex flex-wrap items-center gap-1.5">
-                ${durumGecisButonlariHtml(gorev)}
-                ${hizliTestSecicisiHtml(gorev)}
-              </div>
-            </td>
-            <td class="px-4 py-3 whitespace-nowrap text-right">
-              <button
-                type="button"
-                onclick="duzenleModalAc('${htmlKacis(gorev.id)}')"
-                class="px-2.5 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 rounded-md transition"
-              >
-                Düzenle
-              </button>
-              <button
-                type="button"
-                onclick="gorevSil('${htmlKacis(gorev.id)}')"
-                class="px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-md transition"
-              >
-                Sil
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    function gorunumuCiz() {
-      const kanbanAlani = document.getElementById('kanban-alani');
-      const listeAlani = document.getElementById('liste-alani');
-      const kanbanBtn = document.getElementById('kanban-gorunum-btn');
-      const listeBtn = document.getElementById('liste-gorunum-btn');
-
-      if (aktifGorunum === 'kanban') {
-        kanbanAlani.classList.remove('hidden');
-        listeAlani.classList.add('hidden');
-        kanbanBtn.className = 'px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-indigo-600 shadow-xs transition';
-        listeBtn.className = 'px-3 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 transition';
-        kanbanCiz();
-      } else {
-        kanbanAlani.classList.add('hidden');
-        listeAlani.classList.remove('hidden');
-        listeBtn.className = 'px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-indigo-600 shadow-xs transition';
-        kanbanBtn.className = 'px-3 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 transition';
-        listeCiz();
-      }
-    }
-
-    function yeniModalAc() {
-      document.getElementById('modal-baslik').textContent = 'Yeni Görev Oluştur';
-      document.getElementById('form-gorev-id').value = '';
-      document.getElementById('form-baslik').value = '';
-      document.getElementById('form-aciklama').value = '';
-      document.getElementById('form-oncelik').value = 'ORTA';
-      document.getElementById('form-bitis-tarihi').value = '';
-      document.getElementById('form-tarih-temizle').checked = false;
-      document.getElementById('tarih-temizle-alani').classList.add('hidden');
-      document.getElementById('tarih-temizle-alani').classList.remove('flex');
-      document.getElementById('gorev-modal').classList.remove('hidden');
-      document.getElementById('form-baslik').focus();
-    }
-
-    function duzenleModalAc(gorevId) {
-      const gorev = yuklenenGorevler.find(g => g.id === gorevId);
-      if (!gorev) return;
-
-      document.getElementById('modal-baslik').textContent = 'Görevi Düzenle';
-      document.getElementById('form-gorev-id').value = gorev.id;
-      document.getElementById('form-baslik').value = gorev.baslik;
-      document.getElementById('form-aciklama').value = gorev.aciklama || '';
-      document.getElementById('form-oncelik').value = gorev.oncelik;
-      document.getElementById('form-bitis-tarihi').value = inputIcinTarihFormatla(gorev.bitis_tarihi);
-      document.getElementById('form-tarih-temizle').checked = false;
-      document.getElementById('tarih-temizle-alani').classList.remove('hidden');
-      document.getElementById('tarih-temizle-alani').classList.add('flex');
-      document.getElementById('gorev-modal').classList.remove('hidden');
-    }
-
-    function modalKapat() {
-      document.getElementById('gorev-modal').classList.add('hidden');
-    }
-
-    async function durumDegistir(gorevId, yeniDurum) {
-      try {
-        await apiIstegi(`${API_URL}/${encodeURIComponent(gorevId)}/durum`, {
-          method: 'PATCH',
-          body: JSON.stringify({ yeni_durum: yeniDurum })
-        });
-        toastGoster('Durum Güncellendi', `Görev '${DURUM_BILGISI[yeniDurum].etiket}' durumuna geçirildi.`);
-        await gorevleriYukle();
-      } catch (hata) {
-        toastGoster('Durum Geçişi Reddedildi', hata.message, 'hata');
-        await gorevleriYukle();
-      }
-    }
-
-    async function gorevSil(gorevId) {
-      try {
-        await apiIstegi(`${API_URL}/${encodeURIComponent(gorevId)}`, {
-          method: 'DELETE'
-        });
-        toastGoster('Görev Silindi', 'Görev kalıcı depodan başarıyla kaldırıldı.');
-        await gorevleriYukle();
-      } catch (hata) {
-        toastGoster('Silme İşlemi Engellendi', hata.message, 'hata');
-      }
-    }
-
-    document.getElementById('gorev-form').addEventListener('submit', async (olay) => {
-      olay.preventDefault();
-      const gorevId = document.getElementById('form-gorev-id').value;
-      const baslik = document.getElementById('form-baslik').value;
-      const aciklama = document.getElementById('form-aciklama').value;
-      const oncelik = document.getElementById('form-oncelik').value;
-      const hamTarih = document.getElementById('form-bitis-tarihi').value;
-      const tarihTemizle = document.getElementById('form-tarih-temizle').checked;
-
-      const bitisTarihi = hamTarih ? new Date(hamTarih).toISOString() : null;
-
-      try {
-        if (gorevId) {
-          await apiIstegi(`${API_URL}/${encodeURIComponent(gorevId)}`, {
-            method: 'PUT',
-            body: JSON.stringify({
-              baslik,
-              aciklama,
-              oncelik,
-              bitis_tarihi: tarihTemizle ? null : bitisTarihi,
-              bitis_tarihini_temizle: tarihTemizle
-            })
-          });
-          toastGoster('Görev Güncellendi', 'Değişiklikler başarıyla kaydedildi.');
-        } else {
-          await apiIstegi(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-              baslik,
-              aciklama,
-              oncelik,
-              bitis_tarihi: bitisTarihi
-            })
-          });
-          toastGoster('Görev Oluşturuldu', 'Yeni görev BEKLEMEDE durumunda eklendi.');
-        }
-        modalKapat();
-        await gorevleriYukle();
-      } catch (hata) {
-        toastGoster('İş Kuralı İhlali', hata.message, 'hata');
-      }
-    });
-
-    document.getElementById('yeni-gorev-btn').addEventListener('click', yeniModalAc);
-    document.getElementById('modal-kapat-btn').addEventListener('click', modalKapat);
-    document.getElementById('modal-iptal-btn').addEventListener('click', modalKapat);
-    document.getElementById('yenile-btn').addEventListener('click', gorevleriYukle);
-
-    document.getElementById('kurallar-modal-btn').addEventListener('click', () => {
-      document.getElementById('kurallar-modal').classList.remove('hidden');
-    });
-    document.getElementById('kurallar-kapat-btn').addEventListener('click', () => {
-      document.getElementById('kurallar-modal').classList.add('hidden');
-    });
-
-    document.getElementById('kanban-gorunum-btn').addEventListener('click', () => {
-      aktifGorunum = 'kanban';
-      gorunumuCiz();
-    });
-    document.getElementById('liste-gorunum-btn').addEventListener('click', () => {
-      aktifGorunum = 'liste';
-      gorunumuCiz();
-    });
-
-    document.getElementById('durum-filtre').addEventListener('change', gorevleriYukle);
-    document.getElementById('oncelik-filtre').addEventListener('change', gorevleriYukle);
-    document.getElementById('arama-input').addEventListener('input', () => {
-      clearTimeout(aramaZamanlayici);
-      aramaZamanlayici = setTimeout(gorevleriYukle, 250);
-    });
-    document.getElementById('filtre-temizle-btn').addEventListener('click', () => {
-      document.getElementById('arama-input').value = '';
-      document.getElementById('durum-filtre').value = '';
-      document.getElementById('oncelik-filtre').value = '';
-      gorevleriYukle();
-    });
-
-    window.addEventListener('DOMContentLoaded', async () => {
-      await sistemBilgisiniYukle();
-      await gorevleriYukle();
-    });
-  </script>
+  <script src="/static/app.js?v=3"></script>
 </body>
 </html>

@@ -5,12 +5,13 @@ services:
       dockerfile: Dockerfile
     container_name: gorev-yonetim-sistemi
     ports:
-      - "8000:8000"
+      - "8001:8001"
     environment:
       REPO_TYPE: ${REPO_TYPE:-sqlite}
       SQLITE_DB_PATH: /app/veri/gorevler.db
     volumes:
       - gorev_verisi:/app/veri
+      - ./presentation/web:/app/presentation/web:ro
     restart: unless-stopped
 
 volumes:

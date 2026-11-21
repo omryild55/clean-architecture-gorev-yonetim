@@ -116,26 +116,26 @@ Sistem varsayılan olarak `REPO_TYPE=sqlite` modunda `./gorevler.db` dosyasını
 # Seçenek A: SQLite (Kalıcı veritabanı) ile başlatma
 $env:REPO_TYPE="sqlite"
 $env:SQLITE_DB_PATH="./gorevler.db"
-uvicorn main:uygulama --reload --host 127.0.0.1 --port 8000
+uvicorn main:uygulama --reload --host 127.0.0.1 --port 8001
 
 # Seçenek B: In-Memory (Bellek içi geçici depo) ile başlatma
 $env:REPO_TYPE="memory"
-uvicorn main:uygulama --reload --host 127.0.0.1 --port 8000
+uvicorn main:uygulama --reload --host 127.0.0.1 --port 8001
 ```
 
 #### Linux / macOS (Bash)
 ```bash
 # Seçenek A: SQLite ile başlatma
-REPO_TYPE=sqlite SQLITE_DB_PATH=./gorevler.db uvicorn main:uygulama --reload --host 127.0.0.1 --port 8000
+REPO_TYPE=sqlite SQLITE_DB_PATH=./gorevler.db uvicorn main:uygulama --reload --host 127.0.0.1 --port 8001
 
 # Seçenek B: In-Memory ile başlatma
-REPO_TYPE=memory uvicorn main:uygulama --reload --host 127.0.0.1 --port 8000
+REPO_TYPE=memory uvicorn main:uygulama --reload --host 127.0.0.1 --port 8001
 ```
 
 Uygulama ayağa kalktıktan sonra tarayıcıdan erişebilirsiniz:
-- **Web Paneli (UI):** `http://127.0.0.1:8000/`
-- **Swagger UI:** `http://127.0.0.1:8000/docs`
-- **ReDoc:** `http://127.0.0.1:8000/redoc`
+- **Web Paneli (UI):** `http://127.0.0.1:8001/`
+- **Swagger UI:** `http://127.0.0.1:8001/docs`
+- **ReDoc:** `http://127.0.0.1:8001/redoc`
 
 ### 3. Docker ve Docker Compose ile Tek Komutta Çalıştırma
 
